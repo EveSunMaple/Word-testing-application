@@ -1,0 +1,42 @@
+{
+    "10-13": {
+        "total_tests": 24,
+        "total_words": 12,
+        "avg_proficiency": 6
+    },
+    "10-14": {
+        "total_tests": 24,
+        "total_words": 12,
+        "avg_proficiency": 6
+    },
+    "10-15": {
+        "total_tests": 25,
+        "total_words": 20,
+        "avg_proficiency": 10
+    },
+    "10-16": {
+        "total_tests": 30,
+        "total_words": 20,
+        "avg_proficiency": 24
+    },
+    "10-17": {
+        "total_tests": 42,
+        "total_words": 20,
+        "avg_proficiency": 23
+    },
+    "10-18": {
+        "total_tests": 70,
+        "total_words": 25,
+        "avg_proficiency": 35
+    },
+    "10-19": {
+        "total_tests": 123,
+        "total_words": 115,
+        "avg_proficiency": 25
+    },
+    "10-20": {
+        "total_tests": 186,
+        "total_words": 179,
+        "avg_proficiency": 41.18
+    }
+}

@@ -1,9 +1,17 @@
+import json
 import tkinter as tk
 from tkinter import ttk
+from tkinter import Button
 from ttkbootstrap import Style
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import random
 import datetime 
 import webbrowser
+from pylab import mpl
+
+# 设置显示中文字体
+mpl.rcParams["font.sans-serif"] = ["SimHei"]
 
 # 创建一个函数，用于从爱词霸查询单词的意思
 def search_word_online(word):
@@ -19,6 +27,7 @@ class WordEntry:
 
 # 从文件中加载单词条目
 def load_word_entries(filename):
+    global total_words
     entries = []
     with open(filename, 'r', encoding='utf-8') as file:
         next(file)
@@ -33,12 +42,77 @@ def load_word_entries(filename):
     entries.sort(key=lambda x: x.word)
     return entries
 
+# 加载训练数据
+def load_training_logs():
+    try:
+        with open('log.json', 'r', encoding='utf-8') as log_file:
+            training_data = json.load(log_file)
+            
+        # 获取当前日期
+        current_date = datetime.datetime.now().date()
+
+        # 定义保留的天数
+        max_days_to_keep = 7
+
+        # 复制一份日期列表，然后遍历日期并删除早于7天前的数据
+        dates_to_remove = []
+        for date_str in list(training_data.keys()):
+            date = datetime.datetime.strptime(date_str, '%m-%d').date()
+            if (current_date - date).days > max_days_to_keep:
+                dates_to_remove.append(date_str)
+
+        # 删除早于7天前的数据
+        for date_str in dates_to_remove:
+            del training_data[date_str]
+                
+            return training_data
+    except FileNotFoundError:
+        return {}
+
+# 在主窗口之前加载训练数据
+training_log = load_training_logs()
+
+# 创建折线图
+def create_line_chart(dates, total_tests_data, total_words_data, avg_proficiency_data):
+    fig = Figure(figsize=(5, 4), dpi=100)  # 创建Figure对象
+    ax = fig.add_subplot(111)  # 添加子图
+
+    ax2 = ax.twinx()  # 创建第二个纵轴
+
+    # 调整柱状图的样式
+    ax.bar(dates, avg_proficiency_data, color='lightgreen', label='平均熟练度', width=0.5, alpha=0.7)
+
+    # 调整折线图的样式
+    ax2.plot(dates, total_tests_data, marker='o', linestyle='-', color='orange', label='总训练次数')
+    ax2.plot(dates, total_words_data, marker='o', linestyle='-', color='blue', label='总单词数')
+
+    # 设置标签
+    ax.set_xlabel('日期')
+    ax.set_ylabel('熟练度', color='black')
+    ax2.set_ylabel('次数', color='black')
+
+    return fig
+
+# 更新折线图
+def update_training_plot():
+    dates = list(training_log.keys())
+    total_tests_data = [training_log[date]["total_tests"] for date in dates]
+    total_words_data = [training_log[date]["total_words"] for date in dates]
+    avg_proficiency_data = [training_log[date]["avg_proficiency"] for date in dates]
+
+    for widget in right_frame.winfo_children():
+        widget.destroy()
+
+    line_chart = create_line_chart(dates, total_tests_data, total_words_data, avg_proficiency_data)
+    canvas = FigureCanvasTkAgg(line_chart, right_frame)
+    canvas.get_tk_widget().pack()
+
 # 更新统计信息标签
 def update_stats_label():
     total_words = len(word_entries)
     total_proficiency = sum(word.proficiency for word in word_entries)
-    avg_proficiency = total_proficiency / total_words if total_words > 0 else 0
-    stats_label.config(text=f"训练次数: {total_tests}  平均熟练度: {avg_proficiency * 100:.2f}%")
+    avg_proficiency = (total_proficiency / total_words if total_words > 0 else 0) * 100
+    stats_label.config(text=f"训练次数: {total_tests}  平均熟练度: {avg_proficiency:.2f}%")
 
 # 从翻译中分词匹配
 def check_translation(user_translation, current_word):
@@ -53,9 +127,34 @@ stats_filename = "training_stats.md"
 
 def write_training_stats():
     with open(stats_filename, 'w', encoding='utf-8') as stats_file:
-        stats_file.write("| 开始训练时间 | 最后训练时间 | 总训练次数 | 平均熟练度 |\n")
-        stats_file.write("| :---: | :---: | :---: | :---: |\n")
-        stats_file.write(f"| {current_training_start} | {datetime.datetime.now()} | {total_tests} | {avg_proficiency * 100:.2f} |\n")
+        stats_file.write("| 开始训练时间 | 最后训练时间 | 总训练次数 | 总单词数 | 平均熟练度 |\n")
+        stats_file.write("| :---: | :---: | :---: | :---: | :---: |\n")
+        stats_file.write(f"| {current_training_start} | {datetime.datetime.now()} | {total_tests} | {len(word_entries)} | {avg_proficiency:.2f} |\n")
+    
+    # 获取今天的日期
+    today = datetime.datetime.now().strftime('%m-%d')
+
+    # 创建一个新的统计记录
+    new_stats = {
+        "total_tests": total_tests,
+        "total_words": len(word_entries),
+        "avg_proficiency": avg_proficiency
+    }
+
+    try:
+        # 从log.json中读取之前的数据
+        with open('log.json', 'r') as log_file:
+            log_data = json.load(log_file)
+    except FileNotFoundError:
+        # 如果文件不存在，创建一个空的log_data字典
+        log_data = {}
+
+    # 更新或添加今天的记录
+    log_data[today] = new_stats
+
+    # 写回log.json文件
+    with open('log.json', 'w') as log_file:
+        json.dump(log_data, log_file, indent=4)
 
 # 从文件中加载统计信息
 def load_training_stats():
@@ -66,8 +165,9 @@ def load_training_stats():
             parts = last_line.split('|')
             current_training_start = str(parts[1].strip())
             total_tests = int(parts[3].strip())
-            avg_proficiency = float(parts[4].strip())
-            return current_training_start, total_tests, avg_proficiency
+            total_words = int(parts[4].strip())
+            avg_proficiency = float(parts[5].strip())
+            return current_training_start, total_tests, total_words, avg_proficiency
     except FileNotFoundError:
         return datetime.datetime.now(), 0, 0.0
 
@@ -99,7 +199,7 @@ def check_result():
             decrease_button.config(state=tk.NORMAL)
             current_state = False
     total_tests += 1
-    avg_proficiency = sum(word.proficiency for word in word_entries) / total_tests
+    avg_proficiency = (sum(word.proficiency for word in word_entries) / total_tests) * 100
     update_stats_label()
     write_training_stats()
 
@@ -147,6 +247,8 @@ def show_next_word():
         decrease_button.config(state=tk.DISABLED)
     else:
         word_label.config(text="没有更多单词了")
+    write_training_stats();
+    # update_training_plot()
 
 def on_enter_key(event):
     global current_state
@@ -160,17 +262,17 @@ def on_enter_key(event):
         decrease_proficiency()
 
 # 初始化单词列表
+current_training_start, total_tests, total_words, avg_proficiency = load_training_stats()
 word_entries = load_word_entries("word_list.md")
 user_translation_waiting = None
 current_word = None
-current_training_start, total_tests, avg_proficiency = load_training_stats()
 
 # 创建主窗口
 root = tk.Tk()
 root.title("单词测试")
 
 # 初始化 ttkbootstrap 样式
-style = Style(theme="darkly")
+style = Style(theme="litera")
 
 # 创建框架以容纳内容
 main_frame = ttk.Frame(root)
@@ -183,6 +285,10 @@ menu_frame.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.Y)
 # 创建右侧内容框架
 content_frame = ttk.Frame(main_frame)
 content_frame.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+# 创建右侧空间以容纳折线图
+right_frame = ttk.Frame(main_frame)
+right_frame.pack(side=tk.RIGHT, padx=10, pady=10, fill=tk.BOTH, expand=True)
 
 # 添加用于显示统计信息的标签
 stats_label = ttk.Label(content_frame, text="", font=("微软雅黑", 12))
@@ -222,21 +328,27 @@ search_button = ttk.Button(menu_frame, text="查询单词", command=lambda: sear
 search_button.pack(pady=10)
 search_button.configure(style="TButton")
 
+# 创建一个按钮，用于更新图表
+search_button = ttk.Button(menu_frame, text="更新图表", command=update_training_plot)
+search_button.pack(pady=10)
+search_button.configure(style="TButton")
+
 # 创建单词标签
 word_label = ttk.Label(content_frame, text="", font=("微软雅黑", 24))
 word_label.pack(pady=20)
 
 # 创建文本输入框
-entry = ttk.Entry(content_frame, font=("微软雅黑", 18))
+entry = ttk.Entry(content_frame, font=("微软雅黑", 18), width=20)
 entry.pack(pady=20)
 
 # 创建结果标签
-result_label = ttk.Label(content_frame, text="", font=("微软雅黑", 16))
+result_label = ttk.Label(content_frame, text="", font=("微软雅黑", 16), wraplength=300)  # 设置 wraplength 的值
 result_label.pack()
 
 # 显示第一个单词
 show_next_word()
-
+update_training_plot()
+entry.focus()
 entry.bind("<Return>", on_enter_key)
 
 root.mainloop()
