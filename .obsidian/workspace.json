@@ -1,0 +1,168 @@
+{
+  "main": {
+    "id": "c88f39dc3451bc03",
+    "type": "split",
+    "children": [
+      {
+        "id": "9c4b2042cb613fcd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1fafacee559975e7",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "词汇练习-Python版/word_list.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "d338d8eae780c853",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "README.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "b18585cdd35be66d",
+    "type": "split",
+    "children": [
+      {
+        "id": "955ca50fc5bd05aa",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f4cbb75089cf100e",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "f25d24b877792f77",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "4e4f05f8e3104574",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "77c09d4e09b5ca85",
+    "type": "split",
+    "children": [
+      {
+        "id": "585a1205400db9e9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2a0f88d8ebb4cb2e",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "README.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "3522c747d0d89bcb",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "README.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "573abf40a752eb5b",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              }
+            }
+          },
+          {
+            "id": "15a9bf35db30d71d",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "README.md"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false
+    }
+  },
+  "active": "d338d8eae780c853",
+  "lastOpenFiles": [
+    "词汇练习-Python版/word_list.md",
+    "词汇练习-Python版/training_stats.md",
+    "README.md"
+  ]
+}
