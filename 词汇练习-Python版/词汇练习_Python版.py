@@ -27,8 +27,8 @@ class WordEntry:
 
 # 从文件中加载单词条目
 def load_word_entries(filename):
-    global total_words
-    entries = []
+    word_entry_dict = {}
+    
     with open(filename, 'r', encoding='utf-8') as file:
         next(file)
         next(file)
@@ -37,40 +37,67 @@ def load_word_entries(filename):
             word = parts[1].strip()
             meanings = parts[2].strip()
             proficiency = float(parts[3])
-            entries.append(WordEntry(word, meanings, proficiency))
+            
+            if word in word_entry_dict:
+                # 如果单词已存在，合并新的翻译，去除重复
+                existing_entry = word_entry_dict[word]
+                existing_meanings = existing_entry.meanings.split('，')
+                new_meanings = meanings.split('，')
+                for meaning in new_meanings:
+                    if meaning not in existing_meanings:
+                        existing_meanings.append(meaning)
+                existing_entry.meanings = '，'.join(existing_meanings)
+            else:
+                # 如果单词不存在，添加新的单词条目
+                word_entry_dict[word] = WordEntry(word, meanings, proficiency)
     
+    entries = list(word_entry_dict.values())
     entries.sort(key=lambda x: x.word)
     return entries
 
+# 保存单词条目到文件
+def save_word_entries(filename, entries):
+    with open(filename, 'w', encoding='utf-8') as file:
+        file.write("| 单词 | 翻译 | 熟练度 |\n")
+        file.write("| :---: | :---: | :---: |\n")
+        for entry in entries:
+            file.write(f"| {entry.word} | {entry.meanings} | {entry.proficiency:.4f} |\n")
+
+# 初始化训练数据
+def init_training_logs():
+    # 打开或创建log.json文件
+    try:
+        with open('log.json', 'r') as log_file:
+            training_data = json.load(log_file)
+    except FileNotFoundError:
+        training_data = {}
+
+    # 获取日期列表并按日期降序排序
+    dates = sorted(training_data.keys(), reverse=True)
+
+    # 保留最近的10次数据，删除其余数据
+    for date in dates[10:]:
+        del training_data[date]
+
+    # 写回log.json文件
+    with open('log.json', 'w') as log_file:
+        json.dump(training_data, log_file, indent=4)
+    
 # 加载训练数据
 def load_training_logs():
     try:
         with open('log.json', 'r', encoding='utf-8') as log_file:
             training_data = json.load(log_file)
-            
-        # 获取当前日期
-        current_date = datetime.datetime.now().date()
-
-        # 定义保留的天数
-        max_days_to_keep = 7
-
-        # 复制一份日期列表，然后遍历日期并删除早于7天前的数据
-        dates_to_remove = []
-        for date_str in list(training_data.keys()):
-            date = datetime.datetime.strptime(date_str, '%m-%d').date()
-            if (current_date - date).days > max_days_to_keep:
-                dates_to_remove.append(date_str)
-
-        # 删除早于7天前的数据
-        for date_str in dates_to_remove:
-            del training_data[date_str]
-                
-            return training_data
+        return training_data
     except FileNotFoundError:
         return {}
 
 # 在主窗口之前加载训练数据
+init_training_logs()
 training_log = load_training_logs()
+
+# 创建统计信息文件
+stats_filename = "training_stats.md"
 
 # 创建折线图
 def create_line_chart(dates, total_tests_data, total_words_data, avg_proficiency_data):
@@ -80,7 +107,7 @@ def create_line_chart(dates, total_tests_data, total_words_data, avg_proficiency
     ax2 = ax.twinx()  # 创建第二个纵轴
 
     # 调整柱状图的样式
-    ax.bar(dates, avg_proficiency_data, color='lightgreen', label='平均熟练度', width=0.5, alpha=0.7)
+    ax.bar(dates, avg_proficiency_data, color='lightgreen', label='平均熟练度', width=0.7, alpha=0.7)
 
     # 调整折线图的样式
     ax2.plot(dates, total_tests_data, marker='o', linestyle='-', color='orange', label='总训练次数')
@@ -95,6 +122,7 @@ def create_line_chart(dates, total_tests_data, total_words_data, avg_proficiency
 
 # 更新折线图
 def update_training_plot():
+    training_log = load_training_logs()
     dates = list(training_log.keys())
     total_tests_data = [training_log[date]["total_tests"] for date in dates]
     total_words_data = [training_log[date]["total_words"] for date in dates]
@@ -107,8 +135,24 @@ def update_training_plot():
     canvas = FigureCanvasTkAgg(line_chart, right_frame)
     canvas.get_tk_widget().pack()
 
+# 从文件中加载统计信息
+def load_training_stats():
+    try:
+        with open(stats_filename, 'r', encoding='utf-8') as stats_file:
+            lines = stats_file.read().splitlines()
+            last_line = lines[-1]
+            parts = last_line.split('|')
+            current_training_start = str(parts[1].strip())
+            total_tests = int(parts[3].strip())
+            total_words = int(parts[4].strip())
+            avg_proficiency = float(parts[5].strip())
+            return current_training_start, total_tests, total_words, avg_proficiency
+    except FileNotFoundError:
+        return datetime.datetime.now(), 0, 0.0
+
 # 更新统计信息标签
 def update_stats_label():
+    global user_translation_waiting, total_tests, avg_proficiency
     total_words = len(word_entries)
     total_proficiency = sum(word.proficiency for word in word_entries)
     avg_proficiency = (total_proficiency / total_words if total_words > 0 else 0) * 100
@@ -122,14 +166,15 @@ def check_translation(user_translation, current_word):
             return True  # 如果找到匹配的部分，返回True
     return False  # 如果没有找到匹配的部分，返回False
 
-# 创建统计信息文件
-stats_filename = "training_stats.md"
-
 def write_training_stats():
+    global user_translation_waiting, total_tests, avg_proficiency
+    total_words = len(word_entries)
+    total_proficiency = sum(word.proficiency for word in word_entries)
+    avg_proficiency = (total_proficiency / total_words if total_words > 0 else 0) * 100
     with open(stats_filename, 'w', encoding='utf-8') as stats_file:
         stats_file.write("| 开始训练时间 | 最后训练时间 | 总训练次数 | 总单词数 | 平均熟练度 |\n")
         stats_file.write("| :---: | :---: | :---: | :---: | :---: |\n")
-        stats_file.write(f"| {current_training_start} | {datetime.datetime.now()} | {total_tests} | {len(word_entries)} | {avg_proficiency:.2f} |\n")
+        stats_file.write(f"| {current_training_start} | {datetime.datetime.now()} | {total_tests} | {total_words} | {avg_proficiency:.2f} |\n")
     
     # 获取今天的日期
     today = datetime.datetime.now().strftime('%m-%d')
@@ -155,29 +200,6 @@ def write_training_stats():
     # 写回log.json文件
     with open('log.json', 'w') as log_file:
         json.dump(log_data, log_file, indent=4)
-
-# 从文件中加载统计信息
-def load_training_stats():
-    try:
-        with open(stats_filename, 'r', encoding='utf-8') as stats_file:
-            lines = stats_file.read().splitlines()
-            last_line = lines[-1]
-            parts = last_line.split('|')
-            current_training_start = str(parts[1].strip())
-            total_tests = int(parts[3].strip())
-            total_words = int(parts[4].strip())
-            avg_proficiency = float(parts[5].strip())
-            return current_training_start, total_tests, total_words, avg_proficiency
-    except FileNotFoundError:
-        return datetime.datetime.now(), 0, 0.0
-
-# 保存单词条目到文件
-def save_word_entries(filename, entries):
-    with open(filename, 'w', encoding='utf-8') as file:
-        file.write("| 单词 | 翻译 | 熟练度 |\n")
-        file.write("| :---: | :---: | :---: |\n")
-        for entry in entries:
-            file.write(f"| {entry.word} | {entry.meanings} | {entry.proficiency:.4f} |\n")
 
 def check_result():
     global current_state
@@ -266,6 +288,9 @@ current_training_start, total_tests, total_words, avg_proficiency = load_trainin
 word_entries = load_word_entries("word_list.md")
 user_translation_waiting = None
 current_word = None
+
+# 更新单词列表
+save_word_entries("word_list.md", word_entries)
 
 # 创建主窗口
 root = tk.Tk()

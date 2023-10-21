@@ -1,4 +1,9 @@
 {
+    "10-12": {
+        "total_tests": 14,
+        "total_words": 2,
+        "avg_proficiency": 6
+    },
     "10-13": {
         "total_tests": 24,
         "total_words": 12,
@@ -35,8 +40,13 @@
         "avg_proficiency": 25
     },
     "10-20": {
-        "total_tests": 186,
+        "total_tests": 188,
         "total_words": 179,
-        "avg_proficiency": 41.18
+        "avg_proficiency": 40.73771276595745
+    },
+    "10-21": {
+        "total_tests": 276,
+        "total_words": 180,
+        "avg_proficiency": 47.984388888888944
     }
 }
